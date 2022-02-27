@@ -48,5 +48,17 @@ func toSlice(l *MagicList) []int {
 		currentElement = currentElement.PrevItem
 	}
 
+	slice = reverseSlice(slice)
+
 	return slice
+
+}
+
+func reverseSlice(slice []int) []int {
+	output := []int{}
+
+	for i := len(slice) - 1; i >= 0; i-- {
+		output = append(output, slice[i])
+	}
+	return output
 }
