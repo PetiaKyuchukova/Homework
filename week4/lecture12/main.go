@@ -6,26 +6,33 @@ import (
 )
 
 func generateThrottled(data string, bufferLimit int, clearInterval time.Duration) <-chan string {
-	channel := make(chan string, bufferLimit)
+	channel := make(chan string)
+	channelBuff := make(chan string, bufferLimit)
 
 	go func() {
 		for {
-			for i := 0; i < bufferLimit; i++ {
-				channel <- data
-			}
-			time.Sleep(clearInterval)
+			channel <- data
+			time.Sleep(100 * time.Millisecond)
 		}
 	}()
 
-	return channel
+	go func() {
+		for {
+			time.Sleep(clearInterval)
+			for i := 0; i < bufferLimit; i++ {
+				channelElement := <-channel
+				channelBuff <- channelElement
+			}
+		}
+	}()
+
+	return channelBuff
 }
 
 func main() {
-
 	out := generateThrottled("foo", 2, time.Second)
 
 	for f := range out {
 		log.Println(f)
 	}
-
 }
