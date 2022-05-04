@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+option go_package = "/chat";
+
+package chat;
+service HNService {
+    rpc GetTopTenArticles (MessageRequest) returns (MessageReply) {}
+}
+
+message MessageRequest {
+    string messReq = 1;
+}
+message MessageReply {
+    string stories = 1;
+}
