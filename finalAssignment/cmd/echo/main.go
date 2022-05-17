@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"final/cmd"
 	"final/cmd/echo/currentUser"
 	"final/cmd/echo/handlers"
@@ -9,24 +10,41 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 	_ "github.com/lib/pq"
 	_ "modernc.org/sqlite"
 )
 
 var err error
+var isLogg bool = false
 
 func main() {
 	router := echo.New()
-	repository.InitDB()
+
+	mySQL, err := sql.Open("sqlite", "data.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	repository.SetDB(mySQL)
 
 	router.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
-		myDB := repository.GetDB()
-		currentUser.User = myDB.GetUser(username)
-		checker := helpers.CheckPasswordHash(password, currentUser.User.Password)
-
-		return checker, nil
+		if isLogg == true {
+			return true, nil
+		} else {
+			myDB := repository.GetDB()
+			currentUser.User = myDB.GetUser(username)
+			checker := helpers.CheckPasswordHash(password, currentUser.User.Password)
+			log.Print("A", checker)
+			log.Print("middleware")
+			if checker == true {
+				isLogg = true
+			} else {
+				isLogg = false
+			}
+			return checker, nil
+		}
 	}))
 
 	//Lists API endpoints

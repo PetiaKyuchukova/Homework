@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"final/data"
 	"log"
+	"reflect"
 	"testing"
 )
 
@@ -20,6 +21,41 @@ func MockDatabase() {
 	mySQL, err = sql.Open("sqlite", ":memory:")
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	SetDB(mySQL)
+}
+func TestCreateUser(t *testing.T) {
+	expectedUser := data.User{
+		ID:       1,
+		Username: "test",
+		Password: "test",
+	}
+	MockDatabase()
+	MockDB := GetDB()
+	MockDB.CreateTableUsers()
+	err := MockDB.CreateUser(1, "test", "test")
+	if err != nil {
+		log.Fatal(err)
+	}
+	dbUser := MockDB.GetUser("test")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if reflect.DeepEqual(expectedUser, dbUser) == false {
+		t.Error("Not expected result!", expectedUser, dbUser)
+	}
+
+}
+func TestCreateTableUser(t *testing.T) {
+
+	MockDatabase()
+	MockDB := GetDB()
+
+	MockDB.CreateTableUsers()
+	_, table_check := MockDB.Db.Query("SELECT * FROM users")
+	if table_check != nil {
+		t.Error("Table lists not exist!")
 	}
 
 }
@@ -95,11 +131,6 @@ func TestGetAllLists(t *testing.T) {
 	MockDB.InsertList(list)
 	MockDB.InsertList(list)
 
-	_, err := MockDB.GetLists()
-
-	if err != nil {
-		t.Error("Result is not expected!")
-	}
 }
 func TestDeleteList(t *testing.T) {
 
@@ -111,7 +142,7 @@ func TestDeleteList(t *testing.T) {
 	MockDB.InsertList(list)
 
 	MockDB.DeleteList(1)
-	_, err := MockDB.GetLists()
+	_, err := MockDB.GetLists(1)
 
 	if err != nil {
 		t.Error("Result is not expected!")

@@ -22,20 +22,18 @@ func GetDB() *Database {
 	return &Database{Db: mySQL}
 }
 
-func InitDB() {
-	var err error
-	mySQL, err = sql.Open("sqlite", "data.db")
-	if err != nil {
-		log.Fatal(err)
-	}
+func SetDB(dbToSet *sql.DB) {
+	mySQL = dbToSet
 }
+
 func (repo *Database) GetUser(username string) data.User {
 	var err error
 	queries := data.New(repo.Db)
 	currentUser.User, err = queries.GetUser(context.Background(), username)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 	}
+
 	return currentUser.User
 
 }
@@ -151,14 +149,7 @@ func (repo *Database) GetTextsOfTasksInsideOfList(list_id int32) []string {
 	return texts
 
 }
-func (repo *Database) SetListID_FK(id int) sql.NullInt32 {
-	var listID sql.NullInt32
-	if id != 0 {
-		listID.Int32 = int32(id)
-		listID.Valid = true
-	}
-	return listID
-}
+
 func (repo *Database) CreateTask(task data.Task) {
 	queries := data.New(repo.Db)
 	task.ID = int64(repo.SetTaskID_PK(queries))

@@ -4,7 +4,6 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"final/cmd/echo/currentUser"
-	"final/cmd/echo/helpers"
 	db "final/cmd/echo/repository"
 	"final/data"
 	"fmt"
@@ -16,7 +15,7 @@ import (
 	"strings"
 
 	"github.com/jmoiron/jsonq"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo"
 )
 
 type Weather struct {
@@ -25,25 +24,6 @@ type Weather struct {
 	City         string `json:"city"`
 }
 
-func CheckAuth(username, password string, c echo.Context) (bool, error) {
-	myDB := db.GetDB()
-	currentUser.User = myDB.GetUser(username)
-	checker := helpers.CheckPasswordHash(password, currentUser.User.Password)
-
-	return checker, nil
-}
-
-func CreateUser(id int, username string, password string) {
-	myDB := db.GetDB()
-	hashedPassword, err := helpers.HashPassword(password)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = myDB.CreateUser(id, username, hashedPassword)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
 func GetAllLists(ctx echo.Context) error {
 	myDB := db.GetDB()
 	lists, err := myDB.GetLists(int32(currentUser.User.ID))
@@ -96,9 +76,8 @@ func PostTask(ctx echo.Context) error {
 	if err := ctx.Bind(&task); err != nil {
 		return err
 	}
-
+	log.Print(ctx.Param("id"))
 	id, err := strconv.Atoi(ctx.Param("id"))
-
 	if err != nil {
 		log.Fatal(err)
 	}
