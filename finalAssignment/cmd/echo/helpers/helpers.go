@@ -5,6 +5,7 @@ import (
 	"final/cmd/echo/currentUser"
 	db "final/cmd/echo/repository"
 	"log"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
@@ -43,4 +44,7 @@ func ConverListIdtoSQL(id int) sql.NullInt32 {
 		listID.Valid = true
 	}
 	return listID
+}
+func ConverKelvinToCelsium(temp float64) string {
+	return strconv.Itoa(int(temp-273.15)) + "°C"
 }

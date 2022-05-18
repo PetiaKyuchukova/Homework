@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"final/cmd/echo/currentUser"
+	"final/cmd/echo/helpers"
 	db "final/cmd/echo/repository"
 	"final/data"
 	"fmt"
@@ -54,7 +55,7 @@ func DeleteList(ctx echo.Context) error {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 	myDB.DeleteList(id)
 
-	return ctx.NoContent(http.StatusNoContent)
+	return ctx.NoContent(http.StatusOK)
 }
 func GetTasks(ctx echo.Context) error {
 	myDB := db.GetDB()
@@ -94,7 +95,7 @@ func DeleteTask(ctx echo.Context) error {
 
 	id, _ := strconv.Atoi(ctx.Param("id"))
 	myDB.DeleteTask(id)
-	return ctx.NoContent(http.StatusNoContent)
+	return ctx.NoContent(http.StatusOK)
 }
 func ToggleTask(ctx echo.Context) error {
 	myDB := db.GetDB()
@@ -142,7 +143,9 @@ func ExportToFile(ctx echo.Context) error {
 }
 
 func OpenWeatherMap(ctx echo.Context) error {
+
 	apiKey := "bbec0e6c8e6f0dfc2fab86c0a724ea5c"
+
 	lon := ctx.Request().Header.Get("lon")
 	lat := ctx.Request().Header.Get("lat")
 	weather := Weather{}
@@ -164,7 +167,7 @@ func OpenWeatherMap(ctx echo.Context) error {
 	weather.City, err = jq.String("name")
 	temp, err := jq.Float("main", "temp")
 
-	weather.FormatedTemp = strconv.Itoa(int(temp-273.15)) + "°C"
+	weather.FormatedTemp = helpers.ConverKelvinToCelsium(temp)
 
 	fmt.Println("weather:", weather)
 
