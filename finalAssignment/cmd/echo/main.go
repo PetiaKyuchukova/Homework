@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"final/cmd"
-	"final/cmd/echo/currentUser"
+	"final/cmd/echo/customcontext"
 	"final/cmd/echo/handlers"
 	"final/cmd/echo/helpers"
 	"final/cmd/echo/repository"
@@ -16,11 +16,18 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-var err error
-var isLogg bool = false
+var pathToOWApi = "https://api.openweathermap.org/data/2.5/weather?"
 
 func main() {
+	handlers.SetPathToOWApi(pathToOWApi)
 	router := echo.New()
+
+	router.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			cc := &customcontext.CustomContext{c}
+			return next(cc)
+		}
+	})
 
 	mySQL, err := sql.Open("sqlite", "data.db")
 	if err != nil {
@@ -28,23 +35,24 @@ func main() {
 	}
 
 	repository.SetDB(mySQL)
+	myDB := repository.GetDB()
 
 	router.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
-		if isLogg == true {
+		cc := c.(*customcontext.CustomContext)
+
+		if cc.GetUserName() == username && cc.GetUserPassword() == password {
 			return true, nil
 		} else {
-			myDB := repository.GetDB()
-			currentUser.User = myDB.GetUser(username)
-			checker := helpers.CheckPasswordHash(password, currentUser.User.Password)
-			log.Print("A", checker)
-			log.Print("middleware")
-			if checker == true {
-				isLogg = true
-			} else {
-				isLogg = false
-			}
+			user := myDB.GetUser(username)
+			checker := helpers.CheckPasswordHash(password, user.Password)
+
+			cc.SetUserPassword(password)
+			cc.SetUserName(username)
+			cc.SetUserId(user.ID)
+
 			return checker, nil
 		}
+
 	}))
 
 	//Lists API endpoints

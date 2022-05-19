@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"final/cmd/echo/currentUser"
 	"final/data"
 	"log"
 
@@ -29,12 +28,12 @@ func SetDB(dbToSet *sql.DB) {
 func (repo *Database) GetUser(username string) data.User {
 	var err error
 	queries := data.New(repo.Db)
-	currentUser.User, err = queries.GetUser(context.Background(), username)
+	user, err := queries.GetUser(context.Background(), username)
 	if err != nil {
 		log.Print(err)
 	}
 
-	return currentUser.User
+	return user
 
 }
 func (repo *Database) CreateUser(id int, username string, password string) error {
@@ -89,7 +88,7 @@ func (repo *Database) SetListID_PK(queries *data.Queries) int32 {
 	}
 
 	if id == nil {
-		listId = 1
+		listId = 0
 	} else {
 		listId = int32(id.(int64) + 1)
 	}
@@ -106,11 +105,20 @@ func (repo *Database) InsertList(list data.List) {
 	}
 
 }
-func (repo *Database) GetLists(id int32) ([]data.List, error) {
+func (repo *Database) GetLists(user_id int32) ([]data.List, error) {
 	queries := data.New(repo.Db)
-	list, err := queries.GetUserLists(context.Background(), id)
+	list, err := queries.GetUserLists(context.Background(), user_id)
 
 	return list, err
+}
+func (repo *Database) GetList(id int64) data.List {
+	queries := data.New(repo.Db)
+	list, err := queries.GetList(context.Background(), id)
+	if err != nil {
+		log.Print(err)
+	}
+
+	return list
 }
 func (repo *Database) DeleteList(id int) {
 	queries := data.New(repo.Db)

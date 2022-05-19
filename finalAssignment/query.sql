@@ -27,7 +27,7 @@ SELECT * FROM lists
 WHERE id = ? ;
 -- name: GetTasksInsideOfList :many
 SELECT * FROM tasks
-WHERE list_id = ? ;
+WHERE list_id = ?;
 -- name: GetTextOfTasksInsideOfList :many
 SELECT text FROM tasks
 WHERE list_id = ? ;

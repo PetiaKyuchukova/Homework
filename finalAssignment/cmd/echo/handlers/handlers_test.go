@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"database/sql"
-	"final/cmd/echo/currentUser"
+
+	//"final/cmd/echo/currentUser"
+	customcontext "final/cmd/echo/customcontext"
 	"final/cmd/echo/repository"
 	"final/data"
 	"log"
@@ -44,12 +46,12 @@ func MockDatabase() {
 		);`)
 	repository.SetDB(mySQL)
 	repository.GetDB().CreateTask(data.Task{ID: 0, Text: "string", Completed: false, ListID: 1})
-	repository.GetDB().InsertList(data.List{ID: 1, Name: "string", UserID: 0})
+	repository.GetDB().InsertList(data.List{ID: 0, Name: "string", UserID: 0})
 }
 
 var listJSON = `{"id":0,"name":"string","user_id":0}
 `
-var listOflistsJSON = `[{"id":1,"name":"string","user_id":0}]
+var listOflistsJSON = `[{"id":0,"name":"string","user_id":0}]
 `
 var taskJSON = `{"id":0,"text":"string","completed":false,"list_id":1}
 `
@@ -59,24 +61,26 @@ var completedJSON = `{"completed": true}
 `
 var tasksListJSON = `[{"id":0,"text":"string","completed":false,"list_id":1}]
 `
-var weatherJson = `{"formatedTemp":"33°C","description":"clear sky","city":"Al Kufrah"}
+var weatherJson = `{"formatedTemp":"34°C","description":"clear sky","city":"Al Kufrah"}
 `
 
 func TestCreateList(t *testing.T) {
 	// Setup
 
 	e := echo.New()
+
 	req := httptest.NewRequest(http.MethodPost, "/api/lists", strings.NewReader(listJSON))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
+	cc := &customcontext.CustomContext{c}
 	res := rec.Result()
 
 	MockDatabase()
 
 	defer res.Body.Close()
 
-	if assert.NoError(t, PostList(c)) {
+	if assert.NoError(t, PostList(cc)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, listJSON, rec.Body.String())
 	}
@@ -88,16 +92,19 @@ func TestCreateTask(t *testing.T) {
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	ctx := e.NewContext(req, rec)
+
 	ctx.SetPath("/api/lists/:id")
 	ctx.SetParamNames("id")
 	ctx.SetParamValues("1")
+
+	cc := &customcontext.CustomContext{ctx}
 	res := rec.Result()
 
 	MockDatabase()
 
 	defer res.Body.Close()
 
-	if assert.NoError(t, PostTask(ctx)) {
+	if assert.NoError(t, PostTask(cc)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, taskJSON, rec.Body.String())
 	}
@@ -108,16 +115,19 @@ func TestGetTasks(t *testing.T) {
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	ctx := e.NewContext(req, rec)
+
 	ctx.SetPath("/api/lists/:id")
 	ctx.SetParamNames("id")
 	ctx.SetParamValues("1")
+
+	cc := &customcontext.CustomContext{ctx}
 	res := rec.Result()
 
 	MockDatabase()
 
 	defer res.Body.Close()
 
-	if assert.NoError(t, GetTasks(ctx)) {
+	if assert.NoError(t, GetTasks(cc)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, tasksListJSON, rec.Body.String())
 	}
@@ -129,15 +139,16 @@ func TestGetAllLists(t *testing.T) {
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	ctx := e.NewContext(req, rec)
+	cc := &customcontext.CustomContext{ctx}
 
-	currentUser.User.ID = 0
+	cc.SetUserId(0)
 	res := rec.Result()
 
 	MockDatabase()
 
 	defer res.Body.Close()
 
-	if assert.NoError(t, GetAllLists(ctx)) {
+	if assert.NoError(t, GetAllLists(cc)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, listOflistsJSON, rec.Body.String())
 	}
@@ -152,13 +163,14 @@ func TestToggleTask(t *testing.T) {
 	ctx.SetPath("/api/lists/:id/tasks")
 	ctx.SetParamNames("id")
 	ctx.SetParamValues("0")
+	cc := &customcontext.CustomContext{ctx}
 	res := rec.Result()
 
 	MockDatabase()
 
 	defer res.Body.Close()
 
-	if assert.NoError(t, ToggleTask(ctx)) {
+	if assert.NoError(t, ToggleTask(cc)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, toggeledTaskJSON, rec.Body.String())
 	}
@@ -173,13 +185,14 @@ func TestDeleteList(t *testing.T) {
 	ctx.SetPath("/api/lists/:id")
 	ctx.SetParamNames("id")
 	ctx.SetParamValues("1")
+	cc := &customcontext.CustomContext{ctx}
 	res := rec.Result()
 
 	MockDatabase()
 
 	defer res.Body.Close()
 
-	if assert.NoError(t, DeleteList(ctx)) {
+	if assert.NoError(t, DeleteList(cc)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		//assert.Equal(t, http.NoBody, rec.Body.String())
 	}
@@ -194,25 +207,39 @@ func TestDeleteTask(t *testing.T) {
 	ctx.SetPath("/api/tasks/:id")
 	ctx.SetParamNames("id")
 	ctx.SetParamValues("0")
+	cc := &customcontext.CustomContext{ctx}
 	res := rec.Result()
 
 	MockDatabase()
 
 	defer res.Body.Close()
 
-	if assert.NoError(t, DeleteTask(ctx)) {
+	if assert.NoError(t, DeleteTask(cc)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 	}
 }
 
 func TestOpenWeatherMap(t *testing.T) {
+	input := "{\"formatedTemp\":\"-273°C\",\"description\":\"\",\"city\":\"\"}\n"
+
+	s := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Write([]byte(strings.ToUpper(input)))
+		}),
+	)
+
+	SetPathToOWApi(s.URL)
+
+	defer s.Close()
+
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodGet, "http://localhost:3000/api/weather", http.NoBody)
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	ctx := e.NewContext(req, rec)
-	ctx.Request().Header.Set("lon", "23")
-	ctx.Request().Header.Set("lat", "23")
+	ctx.Request().Header.Set("lon", "")
+	ctx.Request().Header.Set("lat", "")
+	//cc := &customcontext.CustomContext{ctx}
 	res := rec.Result()
 
 	MockDatabase()
@@ -221,7 +248,7 @@ func TestOpenWeatherMap(t *testing.T) {
 
 	if assert.NoError(t, OpenWeatherMap(ctx)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, weatherJson, rec.Body.String())
+		assert.Equal(t, input, rec.Body.String())
 	}
 
 }
@@ -232,6 +259,7 @@ func TestExportToFile(t *testing.T) {
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	ctx := e.NewContext(req, rec)
+	cc := &customcontext.CustomContext{ctx}
 
 	res := rec.Result()
 
@@ -239,7 +267,7 @@ func TestExportToFile(t *testing.T) {
 
 	defer res.Body.Close()
 
-	if assert.NoError(t, ExportToFile(ctx)) {
+	if assert.NoError(t, ExportToFile(cc)) {
 		assert.Equal(t, 200, rec.Code)
 
 	}

@@ -2,12 +2,11 @@ package helpers
 
 import (
 	"database/sql"
-	"final/cmd/echo/currentUser"
+
 	db "final/cmd/echo/repository"
 	"log"
 	"strconv"
 
-	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -21,13 +20,6 @@ func CreateUser(id int, username string, password string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-func CheckAuth(username, password string, c echo.Context) (bool, error) {
-	myDB := db.GetDB()
-	currentUser.User = myDB.GetUser(username)
-	checker := CheckPasswordHash(password, currentUser.User.Password)
-
-	return checker, nil
 }
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)

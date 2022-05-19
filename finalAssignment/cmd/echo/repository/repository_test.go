@@ -119,7 +119,7 @@ func TestInsertList(t *testing.T) {
 
 	_, err := queries.GetList(context.Background(), int64(expextedID))
 	if err != nil {
-		t.Error("Task is not exist!")
+		t.Error("List is not exist!")
 	}
 }
 func TestGetAllLists(t *testing.T) {
